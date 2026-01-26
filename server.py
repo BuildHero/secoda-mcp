@@ -1,3 +1,4 @@
+import json
 import os
 import typing
 
@@ -40,7 +41,7 @@ def call_tool(tool_name: str, args: dict):
         },
     )
     response.raise_for_status()
-    return response.json()
+    return json.dumps(response.json())
 
 
 @mcp.tool()
