@@ -63,9 +63,9 @@ def register_rest_tools(mcp: FastMCP, client: SecodaClient) -> None:
         params: dict = {}
         if integration_id:
             validate_id(integration_id)
-            params["integration"] = integration_id
+            params["integration_id"] = integration_id
         if title:
-            params["search"] = title
+            params["title"] = title
         return safe_json_call(
             client.get_paginated, "table/tables", params=params, page=page
         )
