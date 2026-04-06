@@ -13,18 +13,22 @@ def register_rest_tools(mcp: FastMCP, client: SecodaClient) -> None:
     # ---- Collections ----
 
     @mcp.tool()
-    def list_collections(title: typing.Optional[str] = None) -> str:
+    def list_collections(title: typing.Optional[str] = None, page: int = 1) -> str:
         """List all collections in the workspace. Optionally filter by title (substring match)."""
         params: dict = {}
         if title:
             params["title"] = title
-        return safe_json_call(client.get_paginated, "collection/collections", params=params)
+        return safe_json_call(client.get_paginated, "collection/collections", params=params, page=page)
 
     @mcp.tool()
     def get_collection(collection_id: str) -> str:
         """Get a specific collection by ID, including its description and linked resources."""
-        validate_id(collection_id)
-        return safe_json_call(client.get, f"collection/collections/{collection_id}")
+
+        def _fetch() -> dict:
+            validate_id(collection_id)
+            return client.get(f"collection/collections/{collection_id}")
+
+        return safe_json_call(_fetch)
 
     # ---- Documents ----
 
@@ -41,15 +45,19 @@ def register_rest_tools(mcp: FastMCP, client: SecodaClient) -> None:
     @mcp.tool()
     def get_document(document_id: str) -> str:
         """Get a specific document by ID, including its full markdown content."""
-        validate_id(document_id)
-        return safe_json_call(client.get, f"document/documents/{document_id}")
+
+        def _fetch() -> dict:
+            validate_id(document_id)
+            return client.get(f"document/documents/{document_id}")
+
+        return safe_json_call(_fetch)
 
     # ---- Integrations ----
 
     @mcp.tool()
-    def list_integrations() -> str:
+    def list_integrations(page: int = 1) -> str:
         """List all integrations (data sources) in the workspace. Returns integration IDs, names, and types."""
-        return safe_json_call(client.get_paginated, "integration/integrations")
+        return safe_json_call(client.get_paginated, "integration/integrations", page=page)
 
     # ---- Tables ----
 
@@ -60,15 +68,17 @@ def register_rest_tools(mcp: FastMCP, client: SecodaClient) -> None:
         page: int = 1,
     ) -> str:
         """List tables, optionally filtered by integration_id or title."""
-        params: dict = {}
-        if integration_id:
-            validate_id(integration_id)
-            params["integration_id"] = integration_id
-        if title:
-            params["title"] = title
-        return safe_json_call(
-            client.get_paginated, "table/tables", params=params, page=page
-        )
+
+        def _fetch() -> dict:
+            params: dict = {}
+            if integration_id:
+                validate_id(integration_id)
+                params["integration_id"] = integration_id
+            if title:
+                params["title"] = title
+            return client.get_paginated("table/tables", params=params, page=page)
+
+        return safe_json_call(_fetch)
 
     # ---- Questions ----
 
@@ -80,9 +90,9 @@ def register_rest_tools(mcp: FastMCP, client: SecodaClient) -> None:
     @mcp.tool()
     def get_question(question_id: str) -> str:
         """Get a specific question and its replies/answers by ID."""
-        validate_id(question_id)
 
         def _fetch() -> dict:
+            validate_id(question_id)
             question = client.get(f"question/questions/{question_id}")
             try:
                 replies = client.get_paginated(
@@ -99,13 +109,13 @@ def register_rest_tools(mcp: FastMCP, client: SecodaClient) -> None:
     # ---- Tags ----
 
     @mcp.tool()
-    def list_tags() -> str:
+    def list_tags(page: int = 1) -> str:
         """List all tags defined in the workspace."""
-        return safe_json_call(client.get_paginated, "tag/tags")
+        return safe_json_call(client.get_paginated, "tag/tags", page=page)
 
     # ---- Custom Properties ----
 
     @mcp.tool()
-    def list_custom_properties() -> str:
+    def list_custom_properties(page: int = 1) -> str:
         """List all custom property definitions in the workspace."""
-        return safe_json_call(client.get_paginated, "resource/all_v2/custom_properties")
+        return safe_json_call(client.get_paginated, "resource/all_v2/custom_properties", page=page)

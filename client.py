@@ -19,13 +19,11 @@ NOISY_FIELDS = {
     "workspace_id",
     "definition_version",
     "entity_chat_context",
-    "stale",
-    "stale_at",
     "force_merge_fields",
 }
 
 # UUID pattern for validating entity IDs
-_UUID_RE = re.compile(r"^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$")
+_UUID_RE = re.compile(r"^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$", re.IGNORECASE)
 
 
 def validate_id(entity_id: str) -> str:
@@ -55,8 +53,7 @@ def safe_json_call(func: typing.Callable, *args: typing.Any, **kwargs: typing.An
         return json.dumps(result)
     except requests.exceptions.HTTPError as e:
         status = e.response.status_code if e.response is not None else "unknown"
-        body = e.response.text[:500] if e.response is not None else ""
-        return json.dumps({"error": f"HTTP {status}", "detail": body})
+        return json.dumps({"error": f"HTTP {status}"})
     except requests.exceptions.ConnectionError:
         return json.dumps(
             {"error": "Connection failed", "detail": "Secoda API unreachable"}
@@ -67,9 +64,9 @@ def safe_json_call(func: typing.Callable, *args: typing.Any, **kwargs: typing.An
         )
     except ValueError as e:
         return json.dumps({"error": "Validation error", "detail": str(e)[:500]})
-    except Exception:
+    except Exception as e:
         return json.dumps(
-            {"error": "Unexpected error", "detail": "An internal error occurred"}
+            {"error": "Unexpected error", "detail": type(e).__name__}
         )
 
 
@@ -85,7 +82,7 @@ class SecodaClient:
                 "Content-Type": "application/json",
             }
         )
-        self.session.timeout = 30
+        self.timeout = 30
 
     # ---- Proxy method (for existing 6 tools) ----
 
@@ -97,6 +94,7 @@ class SecodaClient:
         response = self.session.post(
             f"{self.api_url}ai/mcp/tools/call/",
             json={"name": tool_name, "arguments": args},
+            timeout=self.timeout,
         )
         response.raise_for_status()
         return response.json()
@@ -106,7 +104,7 @@ class SecodaClient:
     def get(self, path: str, params: typing.Optional[dict] = None) -> dict:
         """GET a single REST API endpoint. Returns parsed JSON dict."""
         url = f"{self.api_url}{quote(path, safe='/')}"
-        response = self.session.get(url, params=params)
+        response = self.session.get(url, params=params, timeout=self.timeout)
         response.raise_for_status()
         return trim_response(response.json())
 
@@ -126,9 +124,13 @@ class SecodaClient:
 
         # Secoda paginates with {results, count, next, previous}
         results = data.get("results", data if isinstance(data, list) else [])
-        count = data.get("count", data.get("total", len(results)))
+        count = data.get("count", data.get("total"))
 
-        total_pages = math.ceil(count / page_size) if count > 0 else 1
+        if count is not None and count > 0:
+            total_pages = math.ceil(count / page_size)
+        else:
+            count = len(results)
+            total_pages = None
 
         return {
             "results": results,

@@ -8,13 +8,13 @@ SEARCH & DISCOVERY
 
 BROWSE BY CATEGORY
 ------------------
-- **list_collections(title?)** / **get_collection(id)**: Browse and read Secoda collections
+- **list_collections(title?, page?)** / **get_collection(id)**: Browse and read Secoda collections
 - **list_documents(title?, page?)** / **get_document(id)**: Browse and read documents directly
-- **list_integrations()**: Discover available data source integrations (IDs, names, types)
+- **list_integrations(page?)**: Discover available data source integrations (IDs, names, types)
 - **list_tables(integration_id?, title?, page?)**: Browse tables with filtering
 - **list_questions(page?)** / **get_question(id)**: Browse Q&A with answers
-- **list_tags()**: Browse workspace tags
-- **list_custom_properties()**: Browse custom field definitions
+- **list_tags(page?)**: Browse workspace tags
+- **list_custom_properties(page?)**: Browse custom field definitions
 
 ENTITY DETAILS & LINEAGE
 -------------------------
@@ -34,6 +34,7 @@ USAGE GUIDE
 - ID chaining pattern: list_collections → pick ID → get_collection → browse resources
 - list_integrations helps discover integration IDs for filtering list_tables
 - For Q&A, get_question returns both the question AND its replies/answers
+- All list tools support pagination: check total_pages in the response, pass page=2 etc. for more results
 
 COMMON PITFALLS TO AVOID
 ------------------------
